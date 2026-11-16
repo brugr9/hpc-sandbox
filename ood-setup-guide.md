@@ -1,6 +1,6 @@
 # Slurm- & Open-OnDemand-HPC-Sandbox unter WSL2
 
-Hier ist die vollständige, reproduzierbare Installations- und Konfigurationsübersicht deiner gesamten Slurm- & Open-OnDemand-HPC-Sandbox unter WSL2 – inklusive aller relevanten Bash-Befehle zum Nachschlagen oder Neuaufsetzen.
+Installations- und Konfigurationsübersicht einer Slurm- & Open-OnDemand-HPC-Sandbox unter WSL2 – inklusive aller relevanten Bash-Befehle zum Nachschlagen oder Neuaufsetzen.
 
 ## 1. Basis-Sandbox & Container-Startskript (~/ood-ctl.sh)
 

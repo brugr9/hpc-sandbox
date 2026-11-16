@@ -2,7 +2,7 @@
 set -e
 
 SANDBOX_DIR="$PWD/ood-sandbox"
-INSTANCE_NAME="HPC Sandbox Cluster"
+INSTANCE_NAME="HPC-Sandbox-Cluster"
 
 # Hier beliebige Host-Pfade -> Container-Pfade eintragen (kommagetrennt)
 BIND_MOUNTS="$SANDBOX_DIR/hpc-projects:/home/hpcuser/projects,/usr/lib/wsl:/usr/lib/wsl,/dev/dxg:/dev/dxg"
