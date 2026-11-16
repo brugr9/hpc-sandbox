@@ -1,0 +1,70 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update && apt-get install -y \
+        systemd systemd-sysv dbus curl wget gnupg2 lsb-release \
+        apt-transport-https ca-certificates \
+        slurm-wlm munge apache2 apache2-utils ssl-cert sudo vim
+
+    # 1. Create a test user for Open OnDemand login
+    useradd -m -s /bin/bash hpcuser
+    echo "hpcuser:password" | chpasswd
+    usermod -aG sudo hpcuser
+
+    # 2. Configure Munge
+    mkdir -p /etc/munge /var/lib/munge /var/log/munge /run/munge
+    /usr/sbin/mungekey --create --force
+    chown -R munge:munge /etc/munge /var/lib/munge /var/log/munge /run/munge
+    chmod 0700 /etc/munge /var/lib/munge /var/log/munge
+    chmod 0600 /etc/munge/munge.key
+
+    # 3. Configure Single-Node Slurm (using linuxproc for WSL2 compatibility)
+    mkdir -p /etc/slurm /var/spool/slurm/ctld /var/spool/slurm/d
+    chown -R slurm:slurm /var/spool/slurm
+
+    cat << 'EOF' > /etc/slurm/slurm.conf
+ClusterName=wsl-sandbox
+SlurmctldHost=localhost
+ProctrackType=proctrack/linuxproc
+ReturnToService=2
+SlurmctldPidFile=/run/slurmctld.pid
+SlurmdPidFile=/run/slurmd.pid
+SlurmdSpoolDir=/var/spool/slurm/d
+StateSaveLocation=/var/spool/slurm/ctld
+SlurmUser=slurm
+TaskPlugin=task/none
+SchedulerType=sched/backfill
+SelectType=select/cons_tres
+NodeName=localhost CPUs=2 State=UNKNOWN
+PartitionName=debug Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+EOF
+
+    # 4. Install Open OnDemand (Ubuntu 24.04 Noble)
+    wget -O /tmp/ondemand-release.deb https://apt.osc.edu/ondemand/4.2/ondemand-release-web_4.2.0-noble_all.deb
+    apt-get install -y /tmp/ondemand-release.deb
+    apt-get update
+    apt-get install -y ondemand
+    rm -f /tmp/ondemand-release.deb
+
+    # 5. Configure Basic Auth & Self-Signed SSL for OOD
+    htpasswd -cb /etc/apache2/.htpasswd hpcuser password
+    mkdir -p /etc/ood/config
+    cat << 'EOF' > /etc/ood/config/ood_portal.yml
+servername: localhost
+port: 443
+ssl:
+  - 'SSLCertificateFile "/etc/ssl/certs/ssl-cert-snakeoil.pem"'
+  - 'SSLCertificateKeyFile "/etc/ssl/private/ssl-cert-snakeoil.key"'
+auth:
+  - 'AuthType Basic'
+  - 'AuthName "Open OnDemand Sandbox"'
+  - 'AuthBasicProvider file'
+  - 'AuthUserFile "/etc/apache2/.htpasswd"'
+  - 'RequestHeader unset Authorization'
+  - 'Require valid-user'
+EOF
+
+    /opt/ood/ood-portal-generator/sbin/update_ood_portal
+    systemctl enable munge slurmctld slurmd apache2
