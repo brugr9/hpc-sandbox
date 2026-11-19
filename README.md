@@ -1,3 +1,3 @@
 # HPC Sandbox
 
-Slurm- & Open-OnDemand HPC-Sandbox unter WSL2
+HPC-Sandbox under WSL2: Slurm- & Open-OnDemand Setup
